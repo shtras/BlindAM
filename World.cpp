@@ -15,7 +15,7 @@ World::World(Rect size, int seed, int popSize, int breedThreshold): GlobalWindow
   world_->SetDebugDraw(draw_);
   fact_ = new CarFactory(world_);
 
-  float right = -50.0f;
+  float right = -5.0f;
   float top = -3.0f;
   float angle = 0.0f;
   float halfWidth = 2.5f;
@@ -111,7 +111,7 @@ void World::step()
     wheelCount_[i] = 0;
   }
   int SZ = cars_.size();
-  minDist_ = 100000.0f;
+  minDist_ = cars_[0]->getDist();
   for (int i=0; i<SZ; ++i) {
     Car* car = cars_[i];
     bool wasDead = car->isDead();
@@ -136,7 +136,7 @@ void World::step()
     assert (car->numWheels() < NUM_WHEEL_GENES);
     ++wheelCount_[car->numWheels()];
     average += car->getMaxDist();
-    if (car->getDist() < minDist_) {
+    if (car->getDist() < minDist_ && car->getDist() > 0) {
       minDist_ = car->getDist();
     }
   }
