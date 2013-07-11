@@ -322,7 +322,7 @@ int main(int argc, char** argv)
 #endif
 {
   Logger::getInstance().log(INFO_LOG_NAME, "Application started. Hello, World!");
-  Logger::getInstance().log(INFO_LOG_NAME, CString("Application version: ") + Version + CString(BUILD_NUM) + " " + CString(BUILD_STR));
+  Logger::getInstance().log(INFO_LOG_NAME, CString("Application version: ") + Version + " " + CString(BUILD_STR));
 #if defined(WIN32) && defined(DEBUG)
   AllocConsole();
   FILE* stream = NULL;
