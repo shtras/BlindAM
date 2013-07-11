@@ -15,32 +15,7 @@ World::World(Rect size, int seed, int popSize, int breedThreshold): GlobalWindow
   world_->SetDebugDraw(draw_);
   fact_ = new CarFactory(world_);
 
-  float right = -5.0f;
-  float top = -3.0f;
-  float angle = 0.0f;
-  float halfWidth = 2.5f;
-  for (int i=0; i<500; ++i) {
-    b2BodyDef bodyDef1;
-    bodyDef1.position.Set(right, top);
-    b2Body* body1 = world_->CreateBody(&bodyDef1);
-    b2PolygonShape box1;
-    box1.SetAsBox(halfWidth, 0.2f);
-
-    b2FixtureDef gfd;
-    gfd.shape = &box1;
-    gfd.density = 1.0f;
-    gfd.friction = 10.0f;
-    gfd.filter.categoryBits = 2;
-    gfd.filter.maskBits = 1;
-
-    body1->CreateFixture(&gfd);
-    int step = (int)(30*pow(i*0.05f+1, 0.6));
-    angle = 0.02f*(rand()%step - step/2);
-    body1->SetTransform(body1->GetPosition() + b2Vec2(halfWidth*cos(angle), halfWidth*sin(angle)), angle);
-
-    right += halfWidth*2.0f * cos(angle);
-    top += halfWidth*2.0f * sin(angle);
-  }
+  createPath();
 
   //////////////////////////////////////////////////////////////////////////
 
@@ -98,6 +73,54 @@ World::~World()
 {
   delete fact_;
   delete world_;
+}
+
+void World::createPath()
+{
+  float right = -5.0f;
+  float top = -3.0f;
+  float angle = 0.0f;
+  float halfWidth = 2.5f;
+  float length = halfWidth*2.0f;
+
+  b2Vec2 v1(-5.0f, 0);
+  b2Vec2 v2(-5.0f + length, 0);
+
+  for (int i=0; i<500; ++i) {
+    b2BodyDef bodyDef1;
+    bodyDef1.position.Set(right, top);
+    b2Body* body1 = world_->CreateBody(&bodyDef1);
+
+    b2PolygonShape box1;
+    b2Vec2 verts[4];
+    verts[0] = v1;
+    verts[1] = v1 + b2Vec2(0, -20.0f);
+    verts[2] = v2 + b2Vec2(0, -20.0f);
+    verts[3] = v2;
+    box1.Set(verts, 4);
+
+    b2FixtureDef gfd;
+    gfd.shape = &box1;
+    gfd.density = 1.0f;
+    gfd.friction = 10.0f;
+    gfd.filter.categoryBits = 2;
+    gfd.filter.maskBits = 1;
+
+    body1->CreateFixture(&gfd);
+
+    int step = (int)(30*pow(i*0.05f+1, 0.6));
+    angle = 0.02f*(rand()%step - step/2);
+    if (angle > PI*0.5f) {
+      angle = PI*0.49f;
+    }
+    if (angle < -PI*0.5f) {
+      angle = -PI*0.49f;
+    }
+
+    v1 = v2;
+    v2.x += length*cos(angle);
+    v2.y += length*sin(angle);
+  }
 }
 
 void World::step()

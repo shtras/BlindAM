@@ -21,6 +21,7 @@ public:
   void onRMUp();
   void onRMDown();
 private:
+  void createPath();
   void startNewGeneration();
   void performBreed();
   void killAndBreed( int killIdx, Car* car2, Car* car3 );
@@ -42,5 +43,7 @@ private:
   int wheelCount_[NUM_WHEEL_GENES];
   float highScore_;
   float minDist_;
+  vector<float> path_;
+  
 };
 
