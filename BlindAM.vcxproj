@@ -72,7 +72,8 @@
       <Profile>false</Profile>
     </Link>
     <PreBuildEvent>
-      <Command>build_num.exe</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -100,7 +101,8 @@
       <AdditionalLibraryDirectories>lib</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>build_num.exe</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
@@ -123,7 +125,6 @@
     <ClInclude Include="MyB2Draw.h" />
     <ClInclude Include="BoxCar.h" />
     <ClInclude Include="StdAfx.h" />
-    <ClInclude Include="VersionInfo.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

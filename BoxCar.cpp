@@ -2,12 +2,11 @@
 #include "BoxCar.h"
 #include "Renderer.h"
 #include "Button.h"
-#include "VersionInfo.h"
 #include "Credits.h"
 
 #include "Box2D/Box2D.h"
 
-const char* Version = "0.0.6.";
+const char* Version = "0.2";
 
 BoxCar::BoxCar():state_(Menu),stateRunnig_(false),paused_(true), world_(NULL), speed_(1), seedStr_("habrahabr.ru"), popSize_(100), breedThreshold_(10)
 {
@@ -91,7 +90,7 @@ bool BoxCar::mainLoop()
   int dtEvents = 6;
   int frames = 0;
   float fps = 0;
-  CString version = Version + CString(BUILD_NUM) + " " + CString(BUILD_STR);
+  CString version = Version + CString(" ") + CString(BUILD_STR);
   while(stateRunnig_) {
     if (accumulatorEvents > dtEvents) {
       SDL_Event event;
