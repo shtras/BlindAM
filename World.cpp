@@ -3,8 +3,9 @@
 #include "BoxCar.h"
 #include "Button.h"
 
-World::World(Rect size, int seed, int popSize, int breedThreshold): GlobalWindow(size), fact_(NULL), populationSize_(popSize), 
-  breedCount_(0), breedThreshold_(breedThreshold), graphCount_(0), graphThreshold_(500), highScore_(0), minDist_(0)
+World::World(Rect size, int seed, int popSize, int breedThreshold, GenomeSettings* settings, BirthPosition mode):
+  GlobalWindow(size), fact_(NULL), populationSize_(popSize), breedCount_(0), breedThreshold_(breedThreshold), 
+  graphCount_(0), graphThreshold_(500), highScore_(0), minDist_(0), birthPos_(mode), settings_(settings)
 {
   b2Vec2 gravity(0.0f, -5.0f);
   world_ = new b2World(gravity);
@@ -13,7 +14,7 @@ World::World(Rect size, int seed, int popSize, int breedThreshold): GlobalWindow
   draw_->SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit);
 
   world_->SetDebugDraw(draw_);
-  fact_ = new CarFactory(world_);
+  fact_ = new CarFactory(world_, settings);
 
   createPath();
 
@@ -38,28 +39,28 @@ World::World(Rect size, int seed, int popSize, int breedThreshold): GlobalWindow
 
   distanceGraph_->addValue(0,0);
   distanceGraph_->addValue(1,0);
-
-  wheelGraph_ = new Graph(Rect(0.0, 0.3, 0.3, 0.3), 50000, NUM_WHEEL_GENES);
+  wheelCount_ = new int[settings->getNumWheelGenes()];
+  wheelGraph_ = new Graph(Rect(0.0, 0.3, 0.3, 0.3), 50000, settings->getNumWheelGenes());
   addWidget(wheelGraph_);
   wheelGraph_->setColor(0, Vector3(255,0,0));
-  if (NUM_WHEEL_GENES > 1) {
+  if (settings->getNumWheelGenes() > 1) {
     wheelGraph_->setColor(1, Vector3(0,255,0));
   }
-  if (NUM_WHEEL_GENES > 2) {
+  if (settings->getNumWheelGenes() > 2) {
     wheelGraph_->setColor(2, Vector3(255,50,200));
   }
-  if (NUM_WHEEL_GENES > 3) {
+  if (settings->getNumWheelGenes() > 3) {
     wheelGraph_->setColor(3, Vector3(20,150,100));
   }
-  if (NUM_WHEEL_GENES > 4) {
+  if (settings->getNumWheelGenes() > 4) {
     wheelGraph_->setColor(4, Vector3(0,255,200));
   }
-  if (NUM_WHEEL_GENES > 5) {
+  if (settings->getNumWheelGenes() > 5) {
     wheelGraph_->setColor(5, Vector3(0,0,255));
   }
 
   wheelGraph_->addValue(0, (float)populationSize_);
-  for (int i=1; i<NUM_WHEEL_GENES; ++i) {
+  for (int i=1; i<settings->getNumWheelGenes(); ++i) {
     wheelGraph_->addValue(i, 0);
   }
 
@@ -73,6 +74,7 @@ World::~World()
 {
   delete fact_;
   delete world_;
+  delete[] wheelCount_;
 }
 
 void World::createPath()
@@ -85,7 +87,8 @@ void World::createPath()
 
   b2Vec2 v1(-5.0f, 0);
   b2Vec2 v2(-5.0f + length, 0);
-
+  int lastDistance = 0;
+  float maxHeightDuringStep = 0;
   for (int i=0; i<500; ++i) {
     b2BodyDef bodyDef1;
     bodyDef1.position.Set(right, top);
@@ -120,6 +123,13 @@ void World::createPath()
     v1 = v2;
     v2.x += length*cos(angle);
     v2.y += length*sin(angle);
+    if (v2.y > maxHeightDuringStep) {
+      maxHeightDuringStep = v2.y;
+    }
+    if (v2.x/5.0f > lastDistance+1) {
+      heightMap_.push_back(maxHeightDuringStep);
+      maxHeightDuringStep = v2.y;
+    }
   }
 }
 
@@ -130,7 +140,7 @@ void World::step()
   float maxDist = -1000.0f;
   Car* leader = NULL;
   float average = 0;
-  for (int i=0; i<NUM_WHEEL_GENES; ++i) {
+  for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
     wheelCount_[i] = 0;
   }
   int SZ = cars_.size();
@@ -156,7 +166,7 @@ void World::step()
     } else {
       //fact_->destroyCar(car);
     }
-    assert (car->numWheels() < NUM_WHEEL_GENES);
+    assert (car->numWheels() < settings_->getNumWheelGenes());
     ++wheelCount_[car->numWheels()];
     average += car->getMaxDist();
     if (car->getDist() < minDist_ && car->getDist() > 0) {
@@ -173,7 +183,7 @@ void World::step()
     graphCount_ = 0;
     distanceGraph_->addValue(0, average);
     distanceGraph_->addValue(1, highScore_);
-    for (int i=0; i<NUM_WHEEL_GENES; ++i) {
+    for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
       wheelGraph_->addValue(i, (float)wheelCount_[i]);
     }
   }
@@ -219,35 +229,6 @@ bool compareCars(Car* c1, Car* c2)
   return false;
 }
 
-void World::startNewGeneration()
-{
-  //Deprecated function. Was in use before the "blind watchman" algorithm
-  sort (cars_.begin(), cars_.end(), compareCars);  
-  vector<Car*> newCars;
-  newCars.push_back(fact_->cloneCar(cars_[0]));
-  int fracture = populationSize_/4;
-  int starter = 1;
-  while (newCars.size() < populationSize_) {
-    for (uint32_t i=0; i<populationSize_/fracture; ++i) {
-      if (starter-1 == i) {
-        continue;
-      }
-      newCars.push_back(fact_->breedCars(cars_[starter-1], cars_[i], minDist_));
-      if (newCars.size() >= populationSize_) {
-        break;
-      }
-    }
-    ++starter;
-  }
-
-  for (Car* car: cars_) {
-    delete car;
-  }
-  cars_.clear();
-
-  cars_ = newCars;
-}
-
 void World::performBreed()
 {
   uint32_t deadSZ = deadIndeces_.size();
@@ -284,9 +265,26 @@ void World::performBreed()
 
 void World::killAndBreed( int killIdx, Car* breed1, Car* breed2 )
 {
+  float x;
+  float y;
+  switch (birthPos_)
+  {
+  case World::TrackStart:
+    x = 0;
+    y = 1.0f;
+    break;
+  case World::MinBestDist:
+    x = min(breed1->getMaxDist(), breed2->getMaxDist()) * 0.25f;
+    assert (heightMap_.size() > (int)x/5.0f);
+    y = heightMap_[(int)(x/5.0f)];
+    break;
+  default:
+    assert(0);
+    break;
+  }
   fact_->destroyCar(cars_[killIdx]);
   delete cars_[killIdx];
-  cars_[killIdx] = fact_->breedCars(breed1, breed2, 0);
+  cars_[killIdx] = fact_->breedCars(breed1, breed2, x, y);
 }
 
 void World::followLeaderClick()

@@ -11,7 +11,7 @@ int iRand(int from, int to)
   return from + rand()%(to-from);
 }
 
-CarFactory::CarFactory(b2World* world):world_(world)
+CarFactory::CarFactory(b2World* world, GenomeSettings* settings):world_(world), settings_(settings)
 {
 
 }
@@ -33,46 +33,46 @@ Car* CarFactory::generateCar()
 void CarFactory::generateRandomGenome( int* genome )
 {
   int gene = -1;
-  int actualNumEdges = NUM_EDGE_GENES;
+  int actualNumEdges = settings_->getNumEdgeGenes();
   int actualNumWheels = 0;//rand()%(actualNumEdges-2);
-  if (actualNumWheels > NUM_WHEEL_GENES) {
-    actualNumWheels = NUM_WHEEL_GENES;
+  if (actualNumWheels > settings_->getNumWheelGenes()) {
+    actualNumWheels = settings_->getNumWheelGenes();
   }
   genome[++gene] = actualNumWheels;
   //genome[gene] = mutateWheel(genome[gene]);
-  for (int i=0; i<NUM_WHEEL_GENES; ++i) {
+  for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
     genome[++gene] = (rand()%actualNumEdges);
-    genome[++gene] = iRand(MIN_WHEEL_RADIUS, MAX_WHEEL_RADIUS);
-    genome[++gene] = iRand(MIN_WHEEL_TORQUE, MAX_WHEEL_TORQUE);
-    genome[++gene] = iRand(MIN_WHEEL_SPEED, MAX_WHEEL_SPEED);
+    genome[++gene] = iRand(settings_->getMinWheelRadius(), settings_->getMaxWheelRadius());
+    genome[++gene] = iRand(settings_->getMinWheelTorque(), settings_->getMaxWheelTorque());
+    genome[++gene] = iRand(settings_->getMinWheelSpeed(), settings_->getMaxWheelSpeed());
   }
   int angle = 0;
   genome[++gene] = actualNumEdges;
-  for (int i=NUM_WHEEL_GENES; i<NUM_WHEEL_GENES+NUM_EDGE_GENES; ++i) {
+  for (int i=settings_->getNumWheelGenes(); i<settings_->getNumWheelGenes()+settings_->getNumEdgeGenes(); ++i) {
     genome[++gene] = angle;
     assert (genome[gene] < 360);
-    genome[++gene] = iRand(MIN_EDGE_LENGTH, MAX_EDGE_LENGTH);
-    int nextAngle = (i-NUM_WHEEL_GENES+1)*360/NUM_EDGE_GENES;
+    genome[++gene] = iRand(settings_->getMinEdgeLength(), settings_->getMaxEdgeLength());
+    int nextAngle = (i-settings_->getNumWheelGenes()+1)*360/settings_->getNumEdgeGenes();
     angle = iRand(nextAngle-5, min(nextAngle+5, 360));
   }
-  assert (gene == GENOME_SIZE-1);
+  assert (gene == settings_->getGenomeSize()-1);
 }
 
 void CarFactory::fillCarFromGenome(Car* car)
 {
   int gene = 0;
-  for (int i=0; i<NUM_WHEEL_GENES; ++i) {
+  for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
     car->wheels_[i].vertexId = car->genome_[++gene];
     car->wheels_[i].radius = car->genome_[++gene]*0.01f;
     car->wheels_[i].torque = car->genome_[++gene]*0.01f;
     car->wheels_[i].speed = car->genome_[++gene]*0.01f;
   }
   ++gene;
-  for (int i=0; i<NUM_EDGE_GENES; ++i) {
+  for (int i=0; i<settings_->getNumEdgeGenes(); ++i) {
     car->edges_[i].angle = (float)DegToRad(car->genome_[++gene]);
     car->edges_[i].length = car->genome_[++gene]*0.01f;
   }
-  assert(gene == GENOME_SIZE-1);
+  assert(gene == settings_->getGenomeSize()-1);
 }
 
 Car* CarFactory::cloneCar( Car* car )
@@ -86,24 +86,24 @@ Car* CarFactory::cloneCar( Car* car )
   return newCar;
 }
 
-Car* CarFactory::breedCars( Car* car1, Car* car2, float minDist )
+Car* CarFactory::breedCars( Car* car1, Car* car2, float x, float y )
 {
   assert (car1 != car2);
   Car* car = new Car(this);
   //car->initialDist_ = (car1->maxDist_ < car2->maxDist_)?car1->body_->GetPosition() : car2->body_->GetPosition();
-  car->initialDist_ += b2Vec2(minDist,1.0f);
+  car->initialDist_ += b2Vec2(x, y + 1.0f);
   int gene = -1;
 
   car->genome_[++gene] = breedWheelGene(car1->genome_[gene], car2->genome_[gene]);
-  for (int i=0; i<NUM_WHEEL_GENES; ++i) {
-    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], 0, NUM_EDGE_GENES-1);
-    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], MIN_WHEEL_RADIUS, MAX_WHEEL_RADIUS);
-    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], MIN_WHEEL_TORQUE, MAX_WHEEL_TORQUE);
-    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], MIN_WHEEL_SPEED, MAX_WHEEL_SPEED);
+  for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
+    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], 0, settings_->getNumEdgeGenes()-1);
+    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], settings_->getMinWheelRadius(), settings_->getMaxWheelRadius());
+    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], settings_->getMinWheelTorque(), settings_->getMaxWheelTorque());
+    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], settings_->getMinWheelSpeed(), settings_->getMaxWheelSpeed());
   }
 
   car->genome_[++gene] = car2->genome_[gene];
-  for (int i=0; i<NUM_EDGE_GENES; ++i) {
+  for (int i=0; i<settings_->getNumEdgeGenes(); ++i) {
     car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], 0, 355, false);
     if (i > 0) {
       if (car->genome_[gene] <= car->genome_[gene-EDGE_GENE_SIZE]) {
@@ -114,9 +114,9 @@ Car* CarFactory::breedCars( Car* car1, Car* car2, float minDist )
       }
     }
     assert (car->genome_[gene] < 360);
-    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], MIN_EDGE_LENGTH, MAX_EDGE_LENGTH);
+    car->genome_[++gene] = breedGene(car1->genome_[gene], car2->genome_[gene], settings_->getMinEdgeLength(), settings_->getMaxEdgeLength());
   }
-  assert (gene == GENOME_SIZE-1);
+  assert (gene == settings_->getGenomeSize()-1);
   //cloneGenome(car1->genome_, car->genome_);
   fillCarFromGenome(car);
   createGeneratedCar(car);
@@ -129,7 +129,7 @@ void CarFactory::destroyCar( Car* car )
     return;
   }
   world_->DestroyBody(car->body_);
-  for (int i=0; i<NUM_WHEEL_GENES; ++i) {
+  for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
     if (!car->wheels_[i].body) {
       continue;
     }
@@ -144,9 +144,9 @@ void CarFactory::createGeneratedCar( Car* car )
   bodyDef.type = b2_dynamicBody;
   car->body_ = world_->CreateBody(&bodyDef);
   
-  for (int i=0; i<NUM_EDGE_GENES; ++i) {
+  for (int i=0; i<settings_->getNumEdgeGenes(); ++i) {
     int nextIdx = i+1;
-    if (nextIdx >= car->genome_[NUM_EDGES_POSITION]) {
+    if (nextIdx >= car->genome_[settings_->getNumEdgesPosition()]) {
       nextIdx = 0;
     }
     b2Vec2 verts[3];
@@ -173,11 +173,11 @@ void CarFactory::createGeneratedCar( Car* car )
   car->body_->SetTransform(car->initialDist_, 0);
 
   int wheelMask = 1;
-  for (int i=0; i<NUM_WHEEL_GENES; ++i) {
-    int wheelExists = car->genome_[NUM_WHEELS_POSITION] & wheelMask;
+  for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
+    int wheelExists = car->genome_[settings_->getNumWheelsPosition()] & wheelMask;
     wheelMask <<= 1;
     Wheel& wheel = car->wheels_[i];
-    if (!wheelExists || wheel.vertexId >= car->genome_[NUM_EDGES_POSITION]) {
+    if (!wheelExists || wheel.vertexId >= car->genome_[settings_->getNumEdgesPosition()]) {
       wheel.body = NULL;
       wheel.joint = NULL;
       continue;
@@ -237,7 +237,7 @@ b2Vec2 CarFactory::getVecFromLengthAngle( float length, float angle )
 
 void CarFactory::cloneGenome( int* from, int* to )
 {
-  for (int i=0; i<GENOME_SIZE; ++i) {
+  for (int i=0; i<settings_->getGenomeSize(); ++i) {
     to[i] = from[i];
   }
 }
@@ -253,7 +253,7 @@ int CarFactory::breedGene( int g1, int g2, int minV, int maxV, bool canMutate/*=
   } else {
     res = g2;
   }
-  if (canMutate && rand()%100 < 5) {
+  if (canMutate && rand()%100 < settings_->getMutationRate()) {
     res = iRand(minV, maxV);
   }
   if (res < minV) {
@@ -276,7 +276,7 @@ int CarFactory::breedWheelGene(int g1, int g2)
   } else {
     res = g2;
   }
-  if (rand()%100 < 5) {
+  if (rand()%100 < settings_->getMutationRate()) {
     switch (rand()%3)
     {
     case 0:
@@ -293,12 +293,12 @@ int CarFactory::breedWheelGene(int g1, int g2)
     }
   }
 
-  return res & ALL_WHEELS_MASK;
+  return res & settings_->getAllWheelsMask();
 }
 
 int CarFactory::mutateWheel( int wheelGene )
 {
-  int newWheel = (1 << rand()%NUM_WHEEL_GENES);
+  int newWheel = (1 << rand()%settings_->getNumWheelGenes());
   return wheelGene ^ newWheel;
 }
 
@@ -339,7 +339,7 @@ bool Car::step()
   if (idleCounter_ >= IDLE_STEPS_TO_DIE) {
     dead_ = true;
     body_->SetActive(false);
-    for (int i=0; i<NUM_WHEEL_GENES; ++i) {
+    for (int i=0; i<fact_->getSettings()->getNumWheelGenes(); ++i) {
       if (!wheels_[i].body) {
         continue;
       }
@@ -348,7 +348,7 @@ bool Car::step()
     return true;
   }
 
-  for (int i=0; i<NUM_WHEEL_GENES; ++i) {
+  for (int i=0; i<fact_->getSettings()->getNumWheelGenes(); ++i) {
     if (wheels_[i].body && !wheels_[i].joint) {
       ++detachedWheelSteps_;
       if (detachedWheelSteps_ > 100) {
@@ -369,4 +369,38 @@ bool Car::step()
   }
   lastDist_ = currDist_;
   return false;
+}
+
+GenomeSettings::GenomeSettings()
+{
+
+}
+
+GenomeSettings::~GenomeSettings()
+{
+
+}
+
+bool GenomeSettings::init(int minEdgeLength, int maxEdgeLength, int minWheelSpeed, int maxWheelSpeed, int MinWheelTorque, int maxWheelTorque, int numWheelGenes, int numEdgeGenes, int mutationRate)
+{
+  mutationRate_ = mutationRate;
+  minEdgeLength_ = minEdgeLength;
+  maxEdgeLength_ = maxEdgeLength;
+  minWheelSpeed_ = minWheelSpeed;
+  maxWheelSpeed_ = maxWheelSpeed;
+  minWheelTorque_ = MinWheelTorque;
+  maxWheelTorque_ = maxWheelTorque;
+  numWheelGenes_ = numWheelGenes;
+  numEdgeGenes_ = numEdgeGenes;
+  assert (numEdgeGenes_ <= MAX_EDGE_GENES && numWheelGenes_ <= MAX_WHEEL_GENES);
+
+  minWheelRadius_ = minEdgeLength_/3;
+  maxWheelRadius_ = maxEdgeLength_/2;
+
+  allWheelsMask_ = (1 << numWheelGenes_)-1;
+  numWheelsPosition_ = 0;
+  numEdgesPosition_ = WHEEL_GENE_SIZE*numWheelGenes_+1;
+  genomeSize_ = WHEEL_GENE_SIZE*numWheelGenes_ + EDGE_GENE_SIZE*numEdgeGenes_ + 2;
+  assert (genomeSize_ <= MAX_GENOME_SIZE);
+  return true;
 }

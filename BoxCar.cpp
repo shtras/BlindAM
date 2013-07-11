@@ -8,7 +8,20 @@
 
 const char* Version = "0.2";
 
-BoxCar::BoxCar():state_(Menu),stateRunnig_(false),paused_(true), world_(NULL), speed_(1), seedStr_("habrahabr.ru"), popSize_(100), breedThreshold_(10)
+CString getBirthModeName(World::BirthPosition mode)
+{
+  switch (mode)
+  {
+  case World::TrackStart:
+    return "Track start";
+  case World::MinBestDist:
+    return "Looser parent";
+  default:
+    return "Unknown mode";
+  }
+}
+
+BoxCar::BoxCar():state_(Menu),stateRunnig_(false),paused_(true), world_(NULL), speed_(1), seedStr_("habrahabr.ru"), popSize_(100), breedThreshold_(10), birthMode_(World::TrackStart)
 {
 #ifdef DEBUG
   popSize_ = 20;
@@ -17,7 +30,7 @@ BoxCar::BoxCar():state_(Menu),stateRunnig_(false),paused_(true), world_(NULL), s
 
 BoxCar::~BoxCar()
 {
-
+  delete settings_;
 }
 
 BoxCar& BoxCar::getInstance()
@@ -33,6 +46,10 @@ bool BoxCar::init()
     Logger::getInstance().log(ERROR_LOG_NAME, "Failed to initialize renderer");
     return false;
   }
+
+  settings_ = new GenomeSettings();
+  settings_->init(30, 200, 100, 2000, 100, 1000, 5, 8, 5);
+
   return true;
 }
 
@@ -138,36 +155,141 @@ bool BoxCar::mainLoop()
   return true;
 }
 
+void advanceCoords(double& top, double& right, double width, double height)
+{
+  right += width + 0.05;
+  if (right > 1.0 - width) {
+    right = 0.1;
+    top += height + 0.01;
+  }
+}
+
 bool BoxCar::initMenu()
 {
   Renderer& renderer = Renderer::getInstance();
   stateRunnig_ = true;
-  Window* menuWindow = new Window(Rect(0.3, 0.1, 0.4, 0.8));
+  Window* menuWindow = new Window(Rect(0.2, 0.1, 0.6, 0.8));
   renderer.addWidget(menuWindow);
-  double top = 0.3;
-  double height = 0.15;
+  double top = 0.05;
+  double right = 0.1;
+  double height = 0.1;
+  double width = 0.15;
+  Text* t;
+  {
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Seed");
+    menuWindow->addWidget(t);
+    seedInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    seedInput_->setCaption(seedStr_);
+    menuWindow->addWidget(seedInput_);
+    advanceCoords(top, right, width, height);
 
-  Text* seedText = new Text(Rect(0.1, 0.1, 0.2, 0.05));
-  seedText->setCaption("Seed");
-  menuWindow->addWidget(seedText);
-  seedInput_ = new Input(Rect(0.1, 0.15, 0.2, 0.05));
-  seedInput_->setCaption(seedStr_);
-  menuWindow->addWidget(seedInput_);
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Population size");
+    menuWindow->addWidget(t);
+    popSizeInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    popSizeInput_->setCaption(CString(popSize_));
+    menuWindow->addWidget(popSizeInput_);
+    advanceCoords(top, right, width, height);
 
-  Text* popSizeText = new Text(Rect(0.35, 0.1, 0.2, 0.05));
-  popSizeText->setCaption("Population size");
-  menuWindow->addWidget(popSizeText);
-  popSizeInput_ = new Input(Rect(0.35, 0.15, 0.2, 0.05));
-  popSizeInput_->setCaption(CString(popSize_));
-  menuWindow->addWidget(popSizeInput_);
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Breed threshold");
+    menuWindow->addWidget(t);
+    breedThresholdInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    breedThresholdInput_->setCaption(CString(breedThreshold_));
+    menuWindow->addWidget(breedThresholdInput_);
+    advanceCoords(top, right, width, height);
 
-  Text* breedThresholdText = new Text(Rect(0.6, 0.1, 0.2, 0.05));
-  breedThresholdText->setCaption("Breed threshold");
-  menuWindow->addWidget(breedThresholdText);
-  breedThresholdInput_ = new Input(Rect(0.6, 0.15, 0.2, 0.05));
-  breedThresholdInput_->setCaption(CString(breedThreshold_));
-  menuWindow->addWidget(breedThresholdInput_);
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Min edge length");
+    menuWindow->addWidget(t);
+    minEdgeLengthInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    minEdgeLengthInput_->setCaption(CString(settings_->getMinEdgeLength()));
+    menuWindow->addWidget(minEdgeLengthInput_);
+    advanceCoords(top, right, width, height);
 
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Max edge length");
+    menuWindow->addWidget(t);
+    maxEdgeLengthInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    maxEdgeLengthInput_->setCaption(CString(settings_->getMaxEdgeLength()));
+    menuWindow->addWidget(maxEdgeLengthInput_);
+    advanceCoords(top, right, width, height);
+
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Min wheel torque");
+    menuWindow->addWidget(t);
+    minWheelTorqueInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    minWheelTorqueInput_->setCaption(CString(settings_->getMinWheelTorque()));
+    menuWindow->addWidget(minWheelTorqueInput_);
+    advanceCoords(top, right, width, height);
+
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Max wheel torque");
+    menuWindow->addWidget(t);
+    maxWheelTorqueInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    maxWheelTorqueInput_->setCaption(CString(settings_->getMaxWheelTorque()));
+    menuWindow->addWidget(maxWheelTorqueInput_);
+    advanceCoords(top, right, width, height);
+
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Min wheel speed");
+    menuWindow->addWidget(t);
+    minWheelSpeedInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    minWheelSpeedInput_->setCaption(CString(settings_->getMinWheelSpeed()));
+    menuWindow->addWidget(minWheelSpeedInput_);
+    advanceCoords(top, right, width, height);
+
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Max wheel speed");
+    menuWindow->addWidget(t);
+    maxWheelSpeedInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    maxWheelSpeedInput_->setCaption(CString(settings_->getMaxWheelSpeed()));
+    menuWindow->addWidget(maxWheelSpeedInput_);
+    advanceCoords(top, right, width, height);
+
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Max wheels");
+    menuWindow->addWidget(t);
+    numWheelsInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    numWheelsInput_->setCaption(CString(settings_->getNumWheelGenes()));
+    menuWindow->addWidget(numWheelsInput_);
+    advanceCoords(top, right, width, height);
+
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Num edges");
+    menuWindow->addWidget(t);
+    numEdgesInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    numEdgesInput_->setCaption(CString(settings_->getNumEdgeGenes()));
+    menuWindow->addWidget(numEdgesInput_);
+    advanceCoords(top, right, width, height);
+
+    t = new Text(Rect(right, top, width, height*0.5));
+    t->setCaption("Mutation rate");
+    menuWindow->addWidget(t);
+    mutationRateInput_ = new Input(Rect(right, top+height*0.5, width, height*0.5));
+    mutationRateInput_->setCaption(CString(settings_->getMutationRate()));
+    menuWindow->addWidget(mutationRateInput_);
+  }
+
+  right = 0.1;
+  top += height+ 0.05;
+  height *= 0.5f;
+  for (int modeItr = World::TrackStart; modeItr < World::LastMode; ++modeItr) {
+    birthModeButtons_[modeItr] = new Button(Rect(right, top, width, height));
+    advanceCoords(top, right, width, height);
+    birthModeButtons_[modeItr]->setCaption(getBirthModeName((World::BirthPosition)modeItr));
+    if (birthMode_ == modeItr) {
+      birthModeButtons_[modeItr]->setHighlighted(true);
+    }
+    birthModeButtons_[modeItr]->setParam((void*)modeItr);
+    birthModeButtons_[modeItr]->sig1Click.connect(this, &BoxCar::birthModeClick);
+    menuWindow->addWidget(birthModeButtons_[modeItr]);
+  }
+
+  right = 0.1;
+  top += height+ 0.05;
+  height *= 2.0f;
   Button* newGameButton = new Button(Rect(0.1, top, 0.8, height));
   newGameButton->setCaption("Start");
   newGameButton->setColor(Vector4(0, 0, 255, 255));
@@ -208,6 +330,17 @@ bool BoxCar::finishMenu()
   sscanf(popSizeInput_->getCaption(), "%d", &popSize_);
   sscanf(breedThresholdInput_->getCaption(), "%d", &breedThreshold_);
   seedStr_ = seedStr;
+  Logger::getInstance().log(INFO_LOG_NAME, "Used seed: " + seedStr);
+  settings_->init(parseInt(minEdgeLengthInput_->getCaption()),
+    parseInt(maxEdgeLengthInput_->getCaption()),
+    parseInt(minWheelSpeedInput_->getCaption()),
+    parseInt(maxWheelSpeedInput_->getCaption()),
+    parseInt(minWheelTorqueInput_->getCaption()),
+    parseInt(maxWheelTorqueInput_->getCaption()),
+    parseInt(numWheelsInput_->getCaption()),
+    parseInt(numEdgesInput_->getCaption()),
+    parseInt(mutationRateInput_->getCaption()));
+
   Renderer::getInstance().clearWindows();
   return true;
 }
@@ -217,7 +350,7 @@ bool BoxCar::initGame()
   paused_ = true;
   stateRunnig_ = true;
 
-  world_ = new World(Rect(0,0,1,1), seed_, popSize_, breedThreshold_);
+  world_ = new World(Rect(0,0,1,1), seed_, popSize_, breedThreshold_, settings_, birthMode_);
   Renderer::getInstance().addWidget(world_);
   return true;
 }
@@ -226,6 +359,7 @@ bool BoxCar::finishGame()
 {
   Renderer::getInstance().clearWindows();
   world_ = NULL;
+  speed_ = 1;
   return true;
 }
 
@@ -315,6 +449,20 @@ void BoxCar::togglePause()
   paused_ = !paused_;
 }
 
+void BoxCar::birthModeClick(void* param)
+{
+  int mode = *((int*)(&param));
+  assert (mode >= 0 && mode < World::LastMode);
+  birthMode_ = (World::BirthPosition)mode;
+  for (int i=World::TrackStart; i< World::LastMode; ++i) {
+    if (i == mode) {
+      birthModeButtons_[i]->setHighlighted(true);
+    } else {
+      birthModeButtons_[i]->setHighlighted(false);
+    }
+  }
+}
+
 #ifdef WIN32
 int __stdcall WinMain( __in HINSTANCE hInstance, __in_opt HINSTANCE hPrevInstance, __in LPSTR lpCmdLine, __in int nShowCmd )
 #else
@@ -329,15 +477,6 @@ int main(int argc, char** argv)
   errno_t err = freopen_s(&stream, "CON", "w", stdout);
 #endif
 
-  {
-    b2Vec2 gravity (0.0f, -10.0f);
-    b2World world(gravity);
-    b2BodyDef def1;
-    def1.position.Set(0.0f, -10.0f);
-    b2Body* body = world.CreateBody(&def1);
-    
-    int a = 0;
-  }
 
   BoxCar& game = BoxCar::getInstance();
   bool res = game.init();

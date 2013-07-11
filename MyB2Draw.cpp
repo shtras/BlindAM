@@ -28,8 +28,6 @@ void MyB2Draw::DrawPolygon( const b2Vec2* vertices, int32 vertexCount, const b2C
   for (int i=0; i<vertexCount-1; ++i) {
     const b2Vec2& v1 = vertices[i];
     const b2Vec2& v2 = vertices[i+1];
-    static int aaa = 0;
-    ++aaa;
     renderer_.drawLine(getCoord(v1), getCoord(v2));
   }
 

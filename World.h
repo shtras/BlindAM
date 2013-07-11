@@ -11,7 +11,8 @@
 class World: public GlobalWindow
 {
 public:
-  World(Rect size, int seed, int popSize, int breedThreshold);
+  enum BirthPosition {TrackStart=0, MinBestDist, LastMode};
+  World(Rect size, int seed, int popSize, int breedThreshold, GenomeSettings* settings, BirthPosition mode);
   ~World();
   void step();
   void render();
@@ -22,7 +23,6 @@ public:
   void onRMDown();
 private:
   void createPath();
-  void startNewGeneration();
   void performBreed();
   void killAndBreed( int killIdx, Car* car2, Car* car3 );
   void followLeaderClick();
@@ -40,10 +40,11 @@ private:
   int graphCount_;
   int graphThreshold_;
   vector<int> deadIndeces_;
-  int wheelCount_[NUM_WHEEL_GENES];
+  int* wheelCount_;
   float highScore_;
   float minDist_;
-  vector<float> path_;
-  
+  vector<float> heightMap_;
+  BirthPosition birthPos_;
+  GenomeSettings* settings_;
 };
 
