@@ -199,6 +199,14 @@ void World::render()
 {
   draw_->scrollZoomStep();
   world_->DrawDebugData();
+  float x = draw_->getLeft();
+  float zoom = draw_->getZoom();
+  float aspect = Renderer::getInstance().getAspect();
+  Renderer::getInstance().setColor(Vector3(0, 255, 0));
+  for (int i=0; i<10; ++i) {
+    Renderer::getInstance().renderText(i*0.1f, 0.9f, CString((x + i*0.1f/zoom) * aspect, 2));
+  }
+  Renderer::getInstance().resetColor();
 }
 
 void World::onMouseMove()
@@ -274,7 +282,7 @@ void World::killAndBreed( int killIdx, Car* breed1, Car* breed2 )
     y = 1.0f;
     break;
   case World::MinBestDist:
-    x = min(breed1->getMaxDist(), breed2->getMaxDist()) * 0.25f;
+    x = fRand(0, min(breed1->getMaxDist(), breed2->getMaxDist()));
     assert (heightMap_.size() > (int)x/5.0f);
     y = heightMap_[(int)(x/5.0f)];
     break;

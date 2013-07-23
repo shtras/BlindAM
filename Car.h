@@ -29,6 +29,8 @@
 #define MAX_WHEEL_GENES MAX_EDGE_GENES
 #define MAX_GENOME_SIZE ((WHEEL_GENE_SIZE)*(MAX_WHEEL_GENES) + (EDGE_GENE_SIZE)*(MAX_EDGE_GENES) + 2)
 
+float fRand(float from, float to);
+
 class Car;
 
 class GenomeSettings

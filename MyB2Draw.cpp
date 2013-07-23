@@ -82,3 +82,8 @@ void MyB2Draw::setOffset( float x, float y )
   offsetX_ = 0.5f/zoom_ - x/renderer_.getAspect(); 
   offsetY_ = y - 0.5f/zoom_;
 }
+
+float MyB2Draw::getLeft()
+{
+  return -offsetX_;
+}

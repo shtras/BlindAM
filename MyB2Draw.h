@@ -21,6 +21,8 @@ public:
 
   void DrawTransform(const b2Transform& xf);
   void setOffset(float x, float y);
+  float getLeft();
+  float getZoom() {return zoom_;}
 private:
   FCoord getCoord(const b2Vec2& coord);
   Renderer& renderer_;

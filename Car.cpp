@@ -360,7 +360,7 @@ bool Car::step()
       continue;
     }
     assert(wheels_[i].joint);
-    if (wheels_[i].joint->GetReactionForce(1.0f).Length() > 9.0f) {
+    if (wheels_[i].joint->GetReactionForce(1.0f).Length() > 15.0f) {
       //cout << wheels_[i].joint->GetReactionForce(1.0f).Length() << endl;
       fact_->destroyJoint(wheels_[i].joint);
       wheels_[i].joint = NULL;
