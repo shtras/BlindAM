@@ -4,7 +4,8 @@ OBJS = ./World.o \
 	./MyB2Draw.o \
 	./BoxCar.o \
 	./Car.o \
-	./GUI/Forms/Credits.o
+	./GUI/Forms/Credits.o \
+  ./GUI/Forms/TimeControl.o
 
 
 
