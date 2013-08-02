@@ -14,6 +14,8 @@ public:
   void toggleCredits();
   void togglePause();
   bool isPaused() {return paused_;}
+  void speedUp();
+  void speedDown();
 private:
   bool mainLoop();
   bool initMenu();

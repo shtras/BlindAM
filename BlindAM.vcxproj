@@ -111,6 +111,7 @@
   <ItemGroup>
     <ClCompile Include="Car.cpp" />
     <ClCompile Include="GUI\Forms\Credits.cpp" />
+    <ClCompile Include="GUI\Forms\TimeControl.cpp" />
     <ClCompile Include="MyB2Draw.cpp" />
     <ClCompile Include="BoxCar.cpp" />
     <ClCompile Include="StdAfx.cpp">
@@ -122,6 +123,7 @@
   <ItemGroup>
     <ClInclude Include="Car.h" />
     <ClInclude Include="GUI\Forms\Credits.h" />
+    <ClInclude Include="GUI\Forms\TimeControl.h" />
     <ClInclude Include="MyB2Draw.h" />
     <ClInclude Include="BoxCar.h" />
     <ClInclude Include="StdAfx.h" />

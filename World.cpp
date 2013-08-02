@@ -2,6 +2,7 @@
 #include "World.h"
 #include "BoxCar.h"
 #include "Button.h"
+#include "TimeControl.h"
 
 World::World(Rect size, int seed, int popSize, int breedThreshold, GenomeSettings* settings, BirthPosition mode):
   GlobalWindow(size), fact_(NULL), populationSize_(popSize), breedCount_(0), breedThreshold_(breedThreshold), 
@@ -68,6 +69,9 @@ World::World(Rect size, int seed, int popSize, int breedThreshold, GenomeSetting
   followLeaderButton_->setCaption("Follow leader");
   followLeaderButton_->sigClick.connect(this, &World::followLeaderClick);
   addWidget(followLeaderButton_);
+
+  TimeControl* tc = new TimeControl(Rect(0.8, 0.05, 0.2, 0.05));
+  addWidget(tc);
 }
 
 World::~World()

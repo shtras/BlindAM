@@ -384,13 +384,10 @@ void BoxCar::handleEvent( SDL_Event& event )
       break;
     }
     if (event.key.keysym.sym == SDLK_a) {
-      ++speed_;
+      speedUp();
     }
     if (event.key.keysym.sym == SDLK_d) {
-      --speed_;
-      if (speed_ == 0) {
-        speed_ = 1;
-      }
+      speedDown();
     }
     break;
   case SDL_VIDEORESIZE:
@@ -460,6 +457,19 @@ void BoxCar::birthModeClick(void* param)
     } else {
       birthModeButtons_[i]->setHighlighted(false);
     }
+  }
+}
+
+void BoxCar::speedUp()
+{
+  ++speed_;
+}
+
+void BoxCar::speedDown()
+{
+  --speed_;
+  if (speed_ == 0) {
+    speed_ = 1;
   }
 }
 
