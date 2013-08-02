@@ -20,7 +20,7 @@ all: headers $(OBJS)
 	$(CC) -o BlindAM $(OBJS) libBox2D.a $(LDFLAGS)
 
 .cpp.o:
-	$(CC) -fPIC -c $< $(CFLAGS) -o $@
+	$(CC) -c $< $(CFLAGS) -o $@
 
 clean:
 	rm -f BlindAM

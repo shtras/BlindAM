@@ -244,7 +244,7 @@ bool compareCars(Car* c1, Car* c2)
 void World::performBreed()
 {
   uint32_t deadSZ = deadIndeces_.size();
-  if (deadSZ < max(populationSize_/6, 3)) {
+  if (deadSZ < max(populationSize_/6, (uint32_t)3)) {
     return;
   }
   int idx1 = rand()%deadSZ;

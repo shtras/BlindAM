@@ -150,7 +150,11 @@ bool BoxCar::mainLoop()
 
     Renderer::getInstance().renderEnd();
     checkReleaseError("OpenGL error during main loop. Something bad happened :(");
+#ifdef WIN32
     Sleep(0);
+#else
+    sleep(0);
+#endif
   }
   return true;
 }
