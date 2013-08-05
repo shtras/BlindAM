@@ -11,13 +11,22 @@ OBJS = ./World.o \
 
 INCS = -I. -IMath -IGeneric -IGUI -IGUI/Forms
 CFLAGS = $(INCS) -g -std=c++0x -O2
-LDFLAGS =-lSDL -lGL -lSDL_image -lengine -L.
+LDFLAGS =-lSDL -lGL -lSDL_image -L.
+
+ARCH=64
+LIBS = -lengine libBox2D.a
+
+ifeq ($(ARCH),32)
+CFLAGS += -m32
+LDFLAGS += -m32
+LIBS = -lengine32 libBox2D32.a
+endif
 
 headers:
 	$(CC) $(CFLAGS) -c StdAfx.h -o StdAfx.h.gch
 
 all: headers $(OBJS)
-	$(CC) -o BlindAM $(OBJS) libBox2D.a $(LDFLAGS)
+	$(CC) -o BlindAM $(OBJS) $(LIBS) $(LDFLAGS)
 
 .cpp.o:
 	$(CC) -c $< $(CFLAGS) -o $@
