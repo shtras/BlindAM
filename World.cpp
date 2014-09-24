@@ -40,8 +40,8 @@ World::World(Rect size, int seed, int popSize, int breedThreshold, GenomeSetting
 
   distanceGraph_->addValue(0,0);
   distanceGraph_->addValue(1,0);
-  wheelCount_ = new int[settings->getNumWheelGenes()];
-  wheelGraph_ = new Graph(Rect(0.0, 0.3, 0.3, 0.3), 50000, settings->getNumWheelGenes());
+  wheelCount_ = new int[settings->getNumWheelGenes()+1];
+  wheelGraph_ = new Graph(Rect(0.0, 0.3, 0.3, 0.3), 50000, settings->getNumWheelGenes()+1);
   addWidget(wheelGraph_);
   wheelGraph_->setColor(0, Vector3(255,0,0));
   if (settings->getNumWheelGenes() > 1) {
@@ -61,7 +61,7 @@ World::World(Rect size, int seed, int popSize, int breedThreshold, GenomeSetting
   }
 
   wheelGraph_->addValue(0, (float)populationSize_);
-  for (int i=1; i<settings->getNumWheelGenes(); ++i) {
+  for (int i=1; i<=settings->getNumWheelGenes(); ++i) {
     wheelGraph_->addValue(i, 0);
   }
 
@@ -144,7 +144,7 @@ void World::step()
   float maxDist = -1000.0f;
   Car* leader = NULL;
   float average = 0;
-  for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
+  for (int i=0; i<=settings_->getNumWheelGenes(); ++i) {
     wheelCount_[i] = 0;
   }
   int SZ = cars_.size();
@@ -170,7 +170,7 @@ void World::step()
     } else {
       //fact_->destroyCar(car);
     }
-    assert (car->numWheels() < settings_->getNumWheelGenes());
+    assert (car->numWheels() <= settings_->getNumWheelGenes());
     ++wheelCount_[car->numWheels()];
     average += car->getMaxDist();
     if (car->getDist() < minDist_ && car->getDist() > 0) {
@@ -187,7 +187,7 @@ void World::step()
     graphCount_ = 0;
     distanceGraph_->addValue(0, average);
     distanceGraph_->addValue(1, highScore_);
-    for (int i=0; i<settings_->getNumWheelGenes(); ++i) {
+    for (int i=0; i<=settings_->getNumWheelGenes(); ++i) {
       wheelGraph_->addValue(i, (float)wheelCount_[i]);
     }
   }
